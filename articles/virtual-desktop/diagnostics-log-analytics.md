@@ -190,6 +190,19 @@ WVDErrors
 | summarize count(UserName) by CodeSymbolic
 ```
 
+To find out the logon duration for users:
+
+```kusto
+WVDConnections 
+| where Type =~"WVDConnections" and State =~ "Started" | project ResourceAlias, UserName, CorrelationId, TimeGenerated 
+| join kind= leftouter (
+    WVDCheckpoints 
+) on CorrelationId
+| extend DurationFromLogon=datetime_diff("Second",TimeGenerated1,TimeGenerated)
+| where Name=~"RdpStackLogon" 
+| project UserName, TimeStamp=TimeGenerated1, DurationFromLogon
+| summarize LogonDurationInSeconds=avg(DurationFromLogon) by User=UserName
+```
 
 >[!NOTE]
 >- When a user opens Full Desktop, their app usage in the session isn't tracked as checkpoints in the WVDCheckpoints table.
